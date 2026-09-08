@@ -235,3 +235,104 @@ git status
 ## License
 
 MIT
+
+## Troubleshooting
+
+### Google OAuth: `Error 403: access_denied` / app has not completed Google verification
+
+During the first OAuth sign-in, Google may show a message similar to:
+
+```text
+Access blocked: <app name> has not completed the Google verification process
+The app is currently being tested and can only be accessed by developer-approved testers.
+Error 403: access_denied
+```
+
+This normally means the OAuth application is still in **Testing** mode and the Google account you are signing in with has not been added as a test user. It is not a Python error and does not mean the Drive API code is broken.
+
+To resolve it:
+
+1. Open the Google Cloud Console and select the project used for `credentials.json`.
+2. Open **Google Auth Platform** and then **Audience**.
+3. Confirm the application is in **Testing** mode.
+4. Under **Test users**, choose **Add users**.
+5. Add the Google account that will be used to access Drive.
+6. Save the change.
+7. Delete any previously generated `token.json` so authentication starts again.
+8. Run the program and sign in with the test-user account.
+
+Linux/macOS:
+
+```bash
+rm -f token.json
+python -m gdrive_hash_audit.main
+```
+
+Windows PowerShell:
+
+```powershell
+Remove-Item token.json -ErrorAction SilentlyContinue
+python -m gdrive_hash_audit.main
+```
+
+For personal use or development, the application can remain in Testing mode with your Google account registered as a test user. If you publish this project on GitHub, do not publish your OAuth credentials for everyone to use. Each user should create their own Google Cloud project/OAuth Desktop client and supply their own `credentials.json`.
+
+### Git for Windows: `fork: Resource temporarily unavailable`
+
+While working with the repository on Windows, Git Bash may fail with messages such as:
+
+```text
+sh: fork: retry: Resource temporarily unavailable
+git-submodule: fork: Resource temporarily unavailable
+exit code 0xC0000142
+```
+
+This error comes from the Git for Windows/Git Bash environment rather than from `gdrive-hash-audit`.
+
+Try the following:
+
+1. Close all Git Bash, VS Code, IntelliJ, and other terminals using Git, then open a fresh terminal.
+2. Verify Git itself works:
+
+```bash
+git --version
+git status
+```
+
+3. Try the Git operation from **Windows PowerShell** instead of Git Bash:
+
+```powershell
+git status
+git add .
+git commit -m "Initial commit"
+git push
+```
+
+4. Restart Windows if Git Bash continues to fail to create child processes.
+5. If the problem remains after a restart, update or reinstall the latest Git for Windows.
+6. Check antivirus/endpoint-security software if it is preventing Git's shell processes from starting.
+
+You can see which Git installation PowerShell is using with:
+
+```powershell
+where.exe git
+```
+
+This project does not require Git submodules, so a `git-submodule` failure is unrelated to the Google Drive hashing functionality.
+
+## GitHub credential safety
+
+The repository's `.gitignore` excludes both OAuth files:
+
+```text
+credentials.json
+token.json
+```
+
+Before every first push, it is still a good idea to verify:
+
+```bash
+git status
+```
+
+If either OAuth file was accidentally committed before it was added to `.gitignore`, simply adding it to `.gitignore` does not remove it from Git history. Remove it from Git tracking and rotate/revoke exposed credentials as appropriate before publishing the repository.
